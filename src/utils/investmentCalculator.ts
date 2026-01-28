@@ -16,11 +16,11 @@ export const calculateRealInvestment = (
   if (data.veiculo === 'Facebook' || data.veiculo === 'Instagram') {
     if (tipoDeCompraUpper === 'CPL') {
       // CPL = R$ 52,00 por lead (usando clicks como proxy para leads)
-      return data.clicks * 52.00;
+      return data.clicks * 39.97;
     }
     if (tipoDeCompraUpper === 'CPC') {
       // CPC = R$ 15,00 por clique
-      return data.clicks * 15.00;
+      return data.clicks * 1.98;
     }
   }
 
