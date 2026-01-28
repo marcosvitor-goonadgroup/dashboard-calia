@@ -1,10 +1,5 @@
 import { useMemo, useState } from 'react';
 import { ProcessedCampaignData } from '../types/campaign';
-import {
-  getCreativeImageUrl,
-  getCreativeVideoUrl,
-  getCreativeCarouselFiles
-} from '../services/creativeImageService';
 import { BenchmarkData } from '../services/benchmarkService';
 import BenchmarkIndicator from './BenchmarkIndicator';
 import { format } from 'date-fns';
@@ -50,7 +45,6 @@ const formatTipoMidia = (tipoMidia: string): string => {
 const CreativeDetailModal = ({ creativeName, data, benchmark, onClose }: CreativeDetailModalProps) => {
   const [comparisonMode, setComparisonMode] = useState<ComparisonMode>('benchmark');
   const [selectedMetric, setSelectedMetric] = useState<TimelineMetric>('impressoes');
-  const [currentCarouselIndex, setCurrentCarouselIndex] = useState<number>(0);
 
   // Filtra dados do criativo específico
   const creativeData = useMemo(() => {
@@ -90,6 +84,9 @@ const CreativeDetailModal = ({ creativeName, data, benchmark, onClose }: Creativ
 
     const firstItem = creativeData[0];
 
+    // Busca a primeira URL de imagem não vazia
+    const imageUrl = creativeData.find(item => item.image)?.image || '';
+
     return {
       ...aggregated,
       ctr,
@@ -98,7 +95,8 @@ const CreativeDetailModal = ({ creativeName, data, benchmark, onClose }: Creativ
       veiculo: firstItem.veiculo,
       tipoDeCompra: firstItem.tipoDeCompra,
       tipoMidia: firstItem.videoEstaticoAudio,
-      campanha: firstItem.campanha
+      campanha: firstItem.campanha,
+      imageUrl
     };
   }, [creativeData]);
 
@@ -205,12 +203,9 @@ const CreativeDetailModal = ({ creativeName, data, benchmark, onClose }: Creativ
     return null;
   }
 
-  const imageUrl = getCreativeImageUrl(creativeName);
-  const videoUrl = getCreativeVideoUrl(creativeName);
-  const carouselFiles = getCreativeCarouselFiles(creativeName);
+  const imageUrl = currentMetrics.imageUrl;
   const isVideo = formatTipoMidia(currentMetrics.tipoMidia) === 'Vídeo';
-  const hasVideo = videoUrl !== null;
-  const hasCarousel = carouselFiles !== null && carouselFiles.length > 0;
+  const hasImage = imageUrl && imageUrl.length > 0;
 
   // Função para renderizar comparação
   const renderComparison = (value: number, metricKey: 'ctr' | 'vtr' | 'taxaEngajamento') => {
@@ -262,97 +257,28 @@ const CreativeDetailModal = ({ creativeName, data, benchmark, onClose }: Creativ
         <div className="p-6">
           {/* Creative Info Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Image/Video/Carousel Preview */}
+            {/* Image Preview */}
             <div className="bg-gray-50 rounded-lg p-4">
-              {/* Video Player */}
-              {hasVideo ? (
-                <div className="space-y-3">
-                  <div className="aspect-video bg-black rounded-lg overflow-hidden">
-                    <iframe
-                      src={videoUrl}
-                      className="w-full h-full"
-                      allow="autoplay"
-                      allowFullScreen
-                    />
-                  </div>
-                  <div className="text-center text-sm text-gray-600">
-                    🎥 Vídeo do criativo
-                  </div>
-                </div>
-              )
-              /* Carousel */
-              : hasCarousel && carouselFiles ? (
-                <div className="space-y-3">
-                  <div className="relative">
-                    <div className="aspect-square bg-black rounded-lg overflow-hidden flex items-center justify-center">
-                      <img
-                        src={`https://drive.google.com/thumbnail?id=${carouselFiles[currentCarouselIndex].id}&sz=w600`}
-                        alt={`Item ${currentCarouselIndex + 1}`}
-                        className="max-w-full max-h-full object-contain"
-                      />
-                    </div>
-
-                    {/* Carousel Controls */}
-                    {carouselFiles.length > 1 && (
-                      <>
-                        <button
-                          onClick={() => setCurrentCarouselIndex((prev) =>
-                            prev === 0 ? carouselFiles.length - 1 : prev - 1
-                          )}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 shadow-lg transition-all"
-                        >
-                          <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => setCurrentCarouselIndex((prev) =>
-                            prev === carouselFiles.length - 1 ? 0 : prev + 1
-                          )}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 shadow-lg transition-all"
-                        >
-                          <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </button>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Carousel Indicators */}
-                  {carouselFiles.length > 1 && (
-                    <div className="flex justify-center gap-2">
-                      {carouselFiles.map((_, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setCurrentCarouselIndex(index)}
-                          className={`w-2 h-2 rounded-full transition-all ${
-                            index === currentCarouselIndex
-                              ? 'bg-blue-600 w-8'
-                              : 'bg-gray-300 hover:bg-gray-400'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="text-center text-sm text-gray-600">
-                    📁 Carrossel - Item {currentCarouselIndex + 1} de {carouselFiles.length}
-                  </div>
-                </div>
-              )
-              /* Static Image */
-              : imageUrl ? (
+              {hasImage ? (
                 <div className="flex items-center justify-center min-h-[400px]">
                   <img
                     src={imageUrl}
                     alt={creativeName}
                     className="max-w-full max-h-96 object-contain rounded-lg shadow-lg"
+                    onError={(e) => {
+                      // Se a imagem falhar ao carregar, mostra placeholder
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.parentElement!.innerHTML = `
+                        <div class="w-full h-96 bg-gray-200 rounded-lg flex items-center justify-center">
+                          <span class="text-gray-400 text-lg">Imagem não disponível</span>
+                        </div>
+                      `;
+                    }}
                   />
                 </div>
               ) : (
                 <div className="w-full h-96 bg-gray-200 rounded-lg flex items-center justify-center">
-                  <span className="text-gray-400 text-lg">Mídia não disponível</span>
+                  <span className="text-gray-400 text-lg">Imagem não disponível</span>
                 </div>
               )}
             </div>

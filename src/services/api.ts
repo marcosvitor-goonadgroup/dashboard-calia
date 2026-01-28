@@ -68,11 +68,11 @@ export const fetchCampaignData = async (): Promise<ProcessedCampaignData[]> => {
       const rows = response.data.data.values.slice(1);
 
       rows.forEach(row => {
-        if (row.length >= 19) {
-          const numeroPi = row[18] || '';
+        if (row.length >= 20) {
+          const numeroPi = row[19] || '';
           const veiculoRaw = row[14] || '';
           const veiculo = normalizeVeiculo(veiculoRaw);
-          const cliente = row[19] || '';
+          const cliente = row[20] || '';
 
           // Ignora linhas onde o Número PI é "#VALUE!", EXCETO para Google Search
           if (numeroPi === '#VALUE!' && veiculo !== 'Google Search') {
@@ -97,7 +97,8 @@ export const fetchCampaignData = async (): Promise<ProcessedCampaignData[]> => {
             veiculo: veiculo,
             tipoDeCompra: row[15] || '',
             videoEstaticoAudio: row[16] || '',
-            campanha: row[17] || '',
+            image: row[17] || '',
+            campanha: row[18] || '',
             numeroPi: numeroPi,
             cliente: cliente
           };
@@ -204,6 +205,7 @@ export const convertSearchDataToCampaignData = (searchData: ProcessedSearchData[
     veiculo: 'Google Search',
     tipoDeCompra: 'CPC',
     videoEstaticoAudio: '',
+    image: '',
     campanha: item.campanha,
     numeroPi: '',
     cliente: ''

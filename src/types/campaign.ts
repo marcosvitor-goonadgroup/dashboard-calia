@@ -47,6 +47,7 @@ export interface ProcessedCampaignData {
   veiculo: string;
   tipoDeCompra: string;
   videoEstaticoAudio: string;
+  image: string; // URL da imagem do criativo
   campanha: string;
   numeroPi: string;
   cliente: string;

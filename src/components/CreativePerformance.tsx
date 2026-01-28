@@ -4,11 +4,6 @@ import BenchmarkIndicator from './BenchmarkIndicator';
 import CreativeImage from './CreativeImage';
 import CreativeDetailModal from './CreativeDetailModal';
 import { fetchAllBenchmarks, BenchmarkData } from '../services/benchmarkService';
-import {
-  initializeImageCache,
-  getCreativeImageUrl,
-  isCacheInitialized
-} from '../services/creativeImageService';
 
 interface CreativePerformanceProps {
   data: ProcessedCampaignData[];
@@ -20,6 +15,7 @@ interface CreativeData {
   veiculo: string;
   tipoDeCompra: string;
   tipoMidia: string;
+  imageUrl: string; // URL da imagem do criativo da API
   impressoes: number;
   cliques: number;
   views: number;
@@ -66,7 +62,6 @@ const CreativePerformance = ({ data }: CreativePerformanceProps) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [benchmarks, setBenchmarks] = useState<Map<string, BenchmarkData>>(new Map());
-  const [imagesReady, setImagesReady] = useState<boolean>(false);
   const [sortField, setSortField] = useState<SortField>('impressoes');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [selectedCreative, setSelectedCreative] = useState<string | null>(null);
@@ -75,23 +70,6 @@ const CreativePerformance = ({ data }: CreativePerformanceProps) => {
   // Carrega benchmarks ao montar o componente
   useEffect(() => {
     fetchAllBenchmarks().then(setBenchmarks);
-  }, []);
-
-  // Inicializa cache de imagens ao montar o componente
-  useEffect(() => {
-    const loadImages = async () => {
-      setImagesReady(false);
-
-      if (!isCacheInitialized()) {
-        console.log('🔄 Iniciando carregamento de imagens...');
-        await initializeImageCache();
-        console.log('✅ Cache de imagens carregado!');
-      }
-
-      setImagesReady(true);
-    };
-
-    loadImages();
   }, []);
 
   // Handler para ordenação
@@ -151,12 +129,18 @@ const CreativePerformance = ({ data }: CreativePerformanceProps) => {
           veiculo: item.veiculo,
           tipoDeCompra: item.tipoDeCompra,
           tipoMidia: item.videoEstaticoAudio || 'estatico',
+          imageUrl: item.image || '', // URL da imagem do criativo
           impressoes: 0,
           cliques: 0,
           views: 0,
           engajamento: 0,
           videoCompletions: 0
         };
+      }
+
+      // Se ainda não tem imagem e o item atual tem, usa a imagem do item
+      if (!acc[key].imageUrl && item.image) {
+        acc[key].imageUrl = item.image;
       }
 
       acc[key].impressoes += item.impressions;
@@ -181,6 +165,7 @@ const CreativePerformance = ({ data }: CreativePerformanceProps) => {
           veiculo: item.veiculo,
           tipoDeCompra: item.tipoDeCompra,
           tipoMidia: item.tipoMidia,
+          imageUrl: item.imageUrl,
           impressoes: item.impressoes,
           cliques: item.cliques,
           views: item.views,
@@ -341,14 +326,8 @@ const CreativePerformance = ({ data }: CreativePerformanceProps) => {
         </div>
       </div>
 
-      {/* Loading State */}
-      {!imagesReady ? (
-        <div className="py-12 flex flex-col items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-          <p className="text-gray-600 font-medium">Carregando imagens dos criativos...</p>
-          <p className="text-gray-400 text-sm mt-2">Isso pode levar alguns segundos</p>
-        </div>
-      ) : creativeData.length === 0 ? (
+      {/* Empty State */}
+      {creativeData.length === 0 ? (
         <div className="py-12 text-center text-gray-500">
           Nenhum criativo encontrado com os filtros selecionados
         </div>
@@ -403,8 +382,6 @@ const CreativePerformance = ({ data }: CreativePerformanceProps) => {
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
                   {paginatedData.map((creative, index) => {
-                    const imageUrl = getCreativeImageUrl(creative.name);
-
                     return (
                       <tr
                         key={`${creative.name}-${index}`}
@@ -417,7 +394,7 @@ const CreativePerformance = ({ data }: CreativePerformanceProps) => {
                             onClick={() => setSelectedCreative(creative.name)}
                           >
                             <CreativeImage
-                              imageUrl={imageUrl}
+                              imageUrl={creative.imageUrl || null}
                               creativeName={creative.name}
                               size="small"
                             />
