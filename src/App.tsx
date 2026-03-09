@@ -7,15 +7,12 @@ import ImpressionsChart from './components/ImpressionsChart';
 import Filters from './components/Filters';
 import VehicleMetrics from './components/VehicleMetrics';
 import CreativePerformance from './components/CreativePerformance';
-import SearchTermsAnalysis from './components/SearchTermsAnalysis';
 import ComparisonToggle from './components/ComparisonToggle';
 import AIAnalysis from './components/AIAnalysis';
 import OnDemandAnalysis from './components/OnDemandAnalysis';
 import CreativeAnalysis from './components/CreativeAnalysis';
 import ParticlesBackground from './components/ParticlesBackground';
 import PIInfoCard from './components/PIInfoCard';
-import { fetchSearchTermsData } from './services/api';
-import { ProcessedSearchData } from './types/campaign';
 import { subDays } from 'date-fns';
 
 const DashboardContent = () => {
@@ -24,28 +21,9 @@ const DashboardContent = () => {
   const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null);
   const [periodFilter, setPeriodFilter] = useState<'7days' | 'all'>('7days');
   const [comparisonMode, setComparisonMode] = useState<'benchmark' | 'previous'>('benchmark');
-  const [searchTermsData, setSearchTermsData] = useState<ProcessedSearchData[]>([]);
-  const [loadingSearchTerms, setLoadingSearchTerms] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
   const [selectedPI, setSelectedPI] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
-
-  // Load search terms data
-  useEffect(() => {
-    const loadSearchTerms = async () => {
-      try {
-        setLoadingSearchTerms(true);
-        const data = await fetchSearchTermsData();
-        setSearchTermsData(data);
-      } catch (err) {
-        console.error('Erro ao carregar termos de busca:', err);
-      } finally {
-        setLoadingSearchTerms(false);
-      }
-    };
-
-    loadSearchTerms();
-  }, []);
 
   // Muda automaticamente para "Todo o período" quando filtro de datas é aplicado
   useEffect(() => {
@@ -445,15 +423,6 @@ const DashboardContent = () => {
             />
           </div>
 
-          {!loadingSearchTerms && searchTermsData.length > 0 && (
-            <div>
-              <SearchTermsAnalysis
-                data={searchTermsData}
-                selectedCampaign={selectedCampaign}
-                periodFilter={periodFilter}
-              />
-            </div>
-          )}
         </div>
       </main>
       </div>
