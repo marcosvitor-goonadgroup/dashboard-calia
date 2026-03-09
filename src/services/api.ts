@@ -55,7 +55,8 @@ const parseSearchDate = (dateString: string): Date => {
 
 const normalizeVeiculo = (veiculo: string): string => {
   const normalized = veiculo.trim();
-  if (normalized === 'Audience Network' || normalized === 'Messenger' || normalized === 'Threads') {
+  const lower = normalized.toLowerCase();
+  if (lower === 'audience network' || lower === 'messenger' || lower === 'threads' || lower === 'unknown') {
     return 'Facebook';
   }
   return normalized;
