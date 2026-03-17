@@ -341,7 +341,7 @@ const DashboardContent = () => {
           {/* Card de Informações do PI */}
           {selectedPI && (
             <div>
-              <PIInfoCard numeroPi={selectedPI} />
+              <PIInfoCard numeroPi={selectedPI} campaignData={displayData} />
             </div>
           )}
 

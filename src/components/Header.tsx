@@ -1,4 +1,4 @@
-import logoArtplan from '../images/logo-artplan.png';
+import logoCalia from '../images/calia-logo-black.svg';
 
 interface HeaderProps {
   onOpenFilters: () => void;
@@ -14,8 +14,8 @@ const Header = ({ onOpenFilters, onClearFilters, activeFiltersCount }: HeaderPro
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 sm:space-x-4">
               <img
-                src={logoArtplan}
-                alt="Artplan"
+                src={logoCalia}
+                alt="Calia"
                 className="h-8 sm:h-12 w-auto"
               />
               <div className="border-l border-gray-300 pl-2 sm:pl-4">

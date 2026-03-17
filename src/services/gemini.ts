@@ -355,6 +355,13 @@ const callGeminiAPI = async (prompt: string): Promise<string> => {
 };
 
 /**
+ * Expõe callGeminiAPI para uso como fallback em outros serviços
+ */
+export const callGeminiAPIPublic = async (prompt: string): Promise<string> => {
+  return callGeminiAPI(prompt);
+};
+
+/**
  * Gera análise da semana usando IA (com cache)
  * @param forceRefresh Se true, ignora o cache e gera uma nova análise
  */

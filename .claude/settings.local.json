@@ -1,10 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx tsc:*)",
-      "Bash(npm run build:*)",
+      "Bash(ls \"c:\\\\Users\\\\marco\\\\OneDrive\\\\Desktop\\\\GOON\\\\AdDesk\\\\Calia\\\\src\\\\images\"\" && ls \"c:UsersmarcoOneDriveDesktopGOONAdDeskCaliadistassets\"\")",
       "WebFetch(domain:nmbcoamazonia-api.vercel.app)",
-      "Bash(identify \"c:/Users/marco/OneDrive/Desktop/GOON/AdDesk/ArtPlan/src/images/Logo-SENAI.png\")"
+      "Bash(npx tsc:*)"
     ]
   }
 }

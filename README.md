@@ -1,6 +1,6 @@
 # Dashboard BRB - Campanhas de Mídia Online
 
-Dashboard para visualização e análise de campanhas de mídia online da Agência Artplan.
+Dashboard para visualização e análise de campanhas de mídia online da Agência Calia.
 
 ## 🚀 Tecnologias
 
@@ -40,7 +40,7 @@ src/
 ├── styles/             # Estilos
 │   └── index.css       # Tailwind CSS
 ├── images/             # Imagens
-│   └── logo-brb.png    # Logo do Banco BRB
+│   └── logo-calia.png  # Logo do Calia
 ├── App.tsx             # Componente principal
 └── main.tsx            # Entry point
 ```

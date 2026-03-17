@@ -3,11 +3,13 @@ import { useMemo, useState } from 'react';
 import { subDays } from 'date-fns';
 import logoSenai from '../images/Logo-SENAI.png';
 import logoSesi from '../images/sesi_logo.jpg';
+import logoSesc from '../images/logo-sesc.png';
 
 // Mapeamento de logos por cliente
 const clientLogos: Record<string, string> = {
   'SENAI': logoSenai,
-  'SESI': logoSesi
+  'SESI': logoSesi,
+  'SESC': logoSesc
 };
 
 interface CampaignListProps {
