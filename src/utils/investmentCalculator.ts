@@ -20,7 +20,7 @@ export const calculateRealInvestment = (
     }
     if (tipoDeCompraUpper === 'CPC') {
       // CPC = R$ 15,00 por clique
-      return data.clicks * 1.98;
+      return data.clicks * 10.50;
     }
     if (tipoDeCompraUpper === 'CPM') {
       return (data.impressions / 1000) * 28.0;
