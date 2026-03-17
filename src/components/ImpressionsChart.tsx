@@ -101,7 +101,7 @@ const ImpressionsChart = ({
       }));
   };
 
-  const chartData = useMemo(() => {
+  const chartData: any[] = useMemo(() => {
     const currentPeriodData = periodFilter === '7days'
       ? data.filter(item => item.date >= sevenDaysAgo && item.date <= yesterday)
       : data.filter(item => item.date <= yesterday);
@@ -235,7 +235,7 @@ const ImpressionsChart = ({
     return `${value.toFixed(1)}%`;
   };
 
-  const formatTooltip = (value: number | undefined, name: string | undefined) => {
+  const formatTooltip = (value: any, name: any) => {
     if (value === undefined || name === undefined) return '';
 
     // Extrai o nome da métrica removendo o sufixo "_anterior" se existir
