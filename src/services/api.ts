@@ -2,7 +2,7 @@ import axios from 'axios';
 import { ApiResponse, ProcessedCampaignData, ProcessedSearchData, PricingTableRow } from '../types/campaign';
 import { parse } from 'date-fns';
 
-const API_BASE = '/api-proxy';
+const API_BASE = 'https://nmbcoamazonia-api.vercel.app';
 
 const CAMPAIGN_API_URLS = [
   `${API_BASE}/google/sheets/11wHR3ygl6w52Lfy6riucnxkH0IWYEy-Pd_6qryqo7OY/data?range=Meta`
