@@ -39,7 +39,7 @@ const Filters = ({ isOpen, onClose }: FiltersProps) => {
   }, [isOpen, filters]);
 
   // Data máxima permitida é D-1 (ontem)
-  const maxDate = useMemo(() => subDays(new Date(), 1), []);
+  const maxDate = useMemo(() => new Date(), []);
 
   // Obtém a data mínima disponível nos dados
   const minDate = useMemo(() => {

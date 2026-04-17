@@ -32,15 +32,15 @@ const DashboardContent = () => {
     }
   }, [filters.dateRange.start, filters.dateRange.end]);
 
-  // Calcula a data máxima disponível nos dados (exclui D-1)
+  // Calcula a data máxima disponível nos dados (inclui hoje)
   // IMPORTANTE: usa 'data' (não filtrado) para calcular corretamente os últimos 7 dias disponíveis
   const maxAvailableDate = useMemo(() => {
-    const yesterday = subDays(new Date(), 1);
+    const today = new Date();
     const datesInData = data
       .map(item => item.date)
-      .filter(date => date <= yesterday);
+      .filter(date => date <= today);
 
-    if (datesInData.length === 0) return yesterday;
+    if (datesInData.length === 0) return today;
     return new Date(Math.max(...datesInData.map(d => d.getTime())));
   }, [data]);
 
@@ -109,10 +109,6 @@ const DashboardContent = () => {
 
   const displayData = useMemo(() => {
     let filteredDataCopy = filteredData;
-
-    // Sempre exclui o dia atual (considera apenas até D-1)
-    const yesterday = subDays(new Date(), 1);
-    filteredDataCopy = filteredDataCopy.filter(item => item.date <= yesterday);
 
     // Filter by period - usa os últimos 7 dias disponíveis nos dados
     if (periodFilter === '7days') {

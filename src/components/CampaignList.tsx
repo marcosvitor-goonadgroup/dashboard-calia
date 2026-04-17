@@ -93,9 +93,6 @@ const CampaignList = ({
     let filteredData = [...data];
 
     // Aplica filtros de data
-    const yesterday = subDays(new Date(), 1);
-    filteredData = filteredData.filter(item => item.date <= yesterday);
-
     if (filters?.dateRange.start) {
       filteredData = filteredData.filter(d => d.date >= filters.dateRange.start!);
     }
@@ -105,7 +102,7 @@ const CampaignList = ({
 
     // Aplica filtro de período
     if (periodFilter === '7days') {
-      const sevenDaysAgo = subDays(yesterday, 7);
+      const sevenDaysAgo = subDays(new Date(), 7);
       filteredData = filteredData.filter(item => item.date >= sevenDaysAgo);
     }
 
@@ -186,9 +183,6 @@ const CampaignList = ({
 
     let filteredData = [...data];
 
-    const yesterday = subDays(new Date(), 1);
-    filteredData = filteredData.filter(item => item.date <= yesterday);
-
     if (filters?.dateRange.start) {
       filteredData = filteredData.filter(d => d.date >= filters.dateRange.start!);
     }
@@ -197,7 +191,7 @@ const CampaignList = ({
     }
 
     if (periodFilter === '7days') {
-      const sevenDaysAgo = subDays(yesterday, 7);
+      const sevenDaysAgo = subDays(new Date(), 7);
       filteredData = filteredData.filter(item => item.date >= sevenDaysAgo);
     }
 
