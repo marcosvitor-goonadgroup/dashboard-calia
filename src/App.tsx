@@ -1,5 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { CampaignProvider, useCampaign } from './contexts/CampaignContext';
+import ClientDashboard from './pages/ClientDashboard';
+import CampaignDashboard from './pages/CampaignDashboard';
+import PIDashboard from './pages/PIDashboard';
 import Header from './components/Header';
 import BigNumbers from './components/BigNumbers';
 import CampaignList from './components/CampaignList';
@@ -240,7 +243,8 @@ const DashboardContent = () => {
       veiculo: [],
       tipoDeCompra: [],
       campanha: [],
-      numeroPi: null
+      numeroPi: null,
+      localizacao: []
     });
   };
 
@@ -356,6 +360,7 @@ const DashboardContent = () => {
                   selectedVehicle={selectedVehicle}
                   selectedClient={selectedClient}
                   onSelectClient={setSelectedClient}
+                  sevenDaysAgoFromMaxDate={sevenDaysAgoFromMaxDate}
                 />
               </div>
             </div>
@@ -427,6 +432,29 @@ const DashboardContent = () => {
 };
 
 function App() {
+  // Roteamento por path:
+  //   /                              -> visão Agência (dashboard completo)
+  //   /:cliente                      -> visão Cliente
+  //   /:cliente/:campanha            -> visão Campanha
+  //   /:cliente/:campanha/:pi        -> visão PI
+  const pathname = window.location.pathname;
+  const parts = pathname.replace(/^\//, '').split('/').filter(Boolean).map(decodeURIComponent);
+  const clientSlug = parts[0] || '';
+  const campaignSlug = parts[1] || '';
+  const piSlug = parts[2] || '';
+
+  if (clientSlug && campaignSlug && piSlug) {
+    return <PIDashboard clientSlug={clientSlug} campaignSlug={campaignSlug} piSlug={piSlug} />;
+  }
+
+  if (clientSlug && campaignSlug) {
+    return <CampaignDashboard clientSlug={clientSlug} campaignSlug={campaignSlug} />;
+  }
+
+  if (clientSlug) {
+    return <ClientDashboard slug={clientSlug} />;
+  }
+
   return (
     <CampaignProvider>
       <DashboardContent />

@@ -62,6 +62,9 @@ export const calculateRealInvestment = (
     case 'CPV': // Custo por Visualização
       return data.videoViews * pricing.valorFinal;
 
+    case 'CPCV': // Custo por Complete View (visualização completa)
+      return data.videoCompletions * pricing.valorFinal;
+
     case 'CPE': // Custo por Engajamento
       return data.totalEngagements * pricing.valorFinal;
 

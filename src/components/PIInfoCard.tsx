@@ -6,6 +6,7 @@ import { parse, isValid, differenceInDays } from 'date-fns';
 interface PIInfoCardProps {
   numeroPi: string | null;
   campaignData?: ProcessedCampaignData[];
+  defaultExpanded?: boolean;
 }
 
 const fmt = (n: number) =>
@@ -13,10 +14,10 @@ const fmt = (n: number) =>
 
 const fmtNum = (n: number) => new Intl.NumberFormat('pt-BR').format(Math.round(n));
 
-const PIInfoCard = ({ numeroPi, campaignData = [] }: PIInfoCardProps) => {
+const PIInfoCard = ({ numeroPi, campaignData = [], defaultExpanded = false }: PIInfoCardProps) => {
   const [piInfo, setPiInfo] = useState<PIInfo[] | null>(null);
   const [loading, setLoading] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   const normalizeVehicleName = (name: string): string => name.toLowerCase().trim();
 
@@ -41,9 +42,11 @@ const PIInfoCard = ({ numeroPi, campaignData = [] }: PIInfoCardProps) => {
         acc.realizado += item.realInvestment || item.cost;
         acc.impressoes += item.impressions;
         acc.cliques += item.clicks;
+        acc.views += item.videoViews;
+        acc.completeViews += item.videoCompletions;
         return acc;
       },
-      { realizado: 0, impressoes: 0, cliques: 0 }
+      { realizado: 0, impressoes: 0, cliques: 0, views: 0, completeViews: 0 }
     );
   }, [campaignData]);
 
@@ -73,7 +76,7 @@ const PIInfoCard = ({ numeroPi, campaignData = [] }: PIInfoCardProps) => {
     });
 
     // Agrupa realizados por veículo+tipo da campanha
-    const realizadoGrouped = new Map<string, { realizado: number; cliques: number; impressoes: number }>();
+    const realizadoGrouped = new Map<string, { realizado: number; cliques: number; impressoes: number; views: number; completeViews: number }>();
     campaignData.forEach(item => {
       const key = `${normalizeVehicleName(item.veiculo)}|${item.tipoDeCompra.toUpperCase()}`;
       if (realizadoGrouped.has(key)) {
@@ -81,11 +84,15 @@ const PIInfoCard = ({ numeroPi, campaignData = [] }: PIInfoCardProps) => {
         e.realizado += item.realInvestment || item.cost;
         e.cliques += item.clicks;
         e.impressoes += item.impressions;
+        e.views += item.videoViews;
+        e.completeViews += item.videoCompletions;
       } else {
         realizadoGrouped.set(key, {
           realizado: item.realInvestment || item.cost,
           cliques: item.clicks,
           impressoes: item.impressions,
+          views: item.videoViews,
+          completeViews: item.videoCompletions,
         });
       }
     });
@@ -98,6 +105,8 @@ const PIInfoCard = ({ numeroPi, campaignData = [] }: PIInfoCardProps) => {
       quantidade: number;
       impressoesRealizadas: number;
       cliquesRealizados: number;
+      viewsRealizadas: number;
+      completeViewsRealizadas: number;
       matchedByVehicle: boolean;
     }> = [];
 
@@ -121,7 +130,7 @@ const PIInfoCard = ({ numeroPi, campaignData = [] }: PIInfoCardProps) => {
 
       // Último fallback: usa totais gerais quando há apenas uma linha de PI
       if (!match && piGrouped.size === 1) {
-        match = { realizado: totaisRealizados.realizado, cliques: totaisRealizados.cliques, impressoes: totaisRealizados.impressoes };
+        match = { realizado: totaisRealizados.realizado, cliques: totaisRealizados.cliques, impressoes: totaisRealizados.impressoes, views: totaisRealizados.views, completeViews: totaisRealizados.completeViews };
       }
 
       resultado.push({
@@ -132,6 +141,8 @@ const PIInfoCard = ({ numeroPi, campaignData = [] }: PIInfoCardProps) => {
         quantidade: piData.quantidade,
         impressoesRealizadas: match?.impressoes ?? 0,
         cliquesRealizados: match?.cliques ?? 0,
+        viewsRealizadas: match?.views ?? 0,
+        completeViewsRealizadas: match?.completeViews ?? 0,
         matchedByVehicle,
       });
     });
@@ -260,12 +271,26 @@ const PIInfoCard = ({ numeroPi, campaignData = [] }: PIInfoCardProps) => {
             <p className="text-xs font-medium text-gray-500 mb-3">Detalhamento por Veículo</p>
             <div className="space-y-4">
               {veiculacaoPorVeiculoTipo.map((item, index) => {
-                const isCPM = item.tipoDeCompra.toUpperCase().includes('CPM');
-                const isCPC = item.tipoDeCompra.toUpperCase().includes('CPC');
+                const tipoUpper = item.tipoDeCompra.toUpperCase();
+                const isCPM = tipoUpper.includes('CPM');
+                const isCPCV = tipoUpper.includes('CPCV'); // custo por complete view
+                const isCPV = !isCPCV && tipoUpper.includes('CPV');
+                const isCPC = !isCPCV && tipoUpper.includes('CPC'); // "CPCV" contém "CPC"
+                const isViewBased = isCPCV || isCPV;
+                const hasVolume = isCPM || isCPC || isViewBased;
                 const pacingPrevisto = item.previsto * (pacingExpected?.percentElapsed ?? 1);
                 const investOk = item.realizado >= pacingPrevisto;
 
-                const volumeRealizado = isCPM ? item.impressoesRealizadas : isCPC ? item.cliquesRealizados : 0;
+                const volumeRealizado = isCPM
+                  ? item.impressoesRealizadas
+                  : isCPC
+                    ? item.cliquesRealizados
+                    : isCPCV
+                      ? item.completeViewsRealizadas
+                      : isCPV
+                        ? item.viewsRealizadas
+                        : 0;
+                const volumeLabel = isCPM ? 'Impressões' : isCPC ? 'Cliques' : 'Views';
                 const volumePacingPrevisto = item.quantidade * (pacingExpected?.percentElapsed ?? 1);
                 const volumePercent = item.quantidade > 0 ? Math.min((volumeRealizado / item.quantidade) * 100, 100) : 0;
                 const volumePacingPercent = item.quantidade > 0 ? Math.min((volumePacingPrevisto / item.quantidade) * 100, 100) : 0;
@@ -282,9 +307,9 @@ const PIInfoCard = ({ numeroPi, campaignData = [] }: PIInfoCardProps) => {
                         <span className={`px-2 py-0.5 text-xs font-semibold rounded ${investOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                           {investOk ? '✓ Invest.' : '! Invest.'}
                         </span>
-                        {(isCPM || isCPC) && item.quantidade > 0 && (
+                        {hasVolume && item.quantidade > 0 && (
                           <span className={`px-2 py-0.5 text-xs font-semibold rounded ${volumeOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                            {volumeOk ? `✓ ${isCPM ? 'Impr.' : 'Cliques'}` : `! ${isCPM ? 'Impr.' : 'Cliques'}`}
+                            {volumeOk ? `✓ ${isCPM ? 'Impr.' : volumeLabel}` : `! ${isCPM ? 'Impr.' : volumeLabel}`}
                           </span>
                         )}
                       </div>
@@ -313,11 +338,11 @@ const PIInfoCard = ({ numeroPi, campaignData = [] }: PIInfoCardProps) => {
                     </div>
 
                     {/* Barra de pacing de volume */}
-                    {(isCPM || isCPC) && item.quantidade > 0 && (
+                    {hasVolume && item.quantidade > 0 && (
                       <div>
                         <div className="flex justify-between items-center mb-1">
                           <p className="text-xs text-gray-500">
-                            {isCPM ? 'Impressões' : 'Cliques'} contratados:{' '}
+                            {volumeLabel} contratad{isCPM || isViewBased ? 'as' : 'os'}:{' '}
                             <span className="font-medium text-gray-700">{fmtNum(item.quantidade)}</span>
                           </p>
                           <p className="text-xs font-medium text-gray-600">
@@ -346,6 +371,11 @@ const PIInfoCard = ({ numeroPi, campaignData = [] }: PIInfoCardProps) => {
                         {isCPC && item.realizado > 0 && item.cliquesRealizados > 0 && (
                           <p className="text-xs text-gray-500 mt-1">
                             CPC Real: {fmt(item.realizado / item.cliquesRealizados)}
+                          </p>
+                        )}
+                        {isViewBased && item.realizado > 0 && volumeRealizado > 0 && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            {isCPCV ? 'CPCV' : 'CPV'} Real: {fmt(item.realizado / volumeRealizado)}
                           </p>
                         )}
                       </div>

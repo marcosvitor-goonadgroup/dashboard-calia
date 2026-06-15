@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { ProcessedCampaignData, Filters, CampaignSummary, CampaignMetrics } from '../types/campaign';
-import { fetchCampaignData, fetchPricingTable } from '../services/api';
+import { fetchCampaignData, fetchDailymotionData, fetchPricingTable } from '../services/api';
 import { calculateRealInvestment } from '../utils/investmentCalculator';
 import { subDays, isAfter } from 'date-fns';
 
@@ -13,12 +13,14 @@ interface CampaignContextType {
   error: string | null;
   campaigns: CampaignSummary[];
   overallMetrics: CampaignMetrics;
+  agencia: string;
   availableFilters: {
     veiculos: string[];
     tiposDeCompra: string[];
     campanhas: string[];
     numerosPi: string[];
     clientes: string[];
+    localizacoes: string[];
   };
 }
 
@@ -46,7 +48,8 @@ export const CampaignProvider = ({ children }: CampaignProviderProps) => {
     veiculo: [],
     tipoDeCompra: [],
     campanha: [],
-    numeroPi: null
+    numeroPi: null,
+    localizacao: []
   });
 
   useEffect(() => {
@@ -54,15 +57,18 @@ export const CampaignProvider = ({ children }: CampaignProviderProps) => {
       try {
         setLoading(true);
 
-        // Carrega dados de campanha e tabela de preços em paralelo
-        const [campaignData, pricingData] = await Promise.all([
+        // Carrega dados de campanha (Meta + Dailymotion) e tabela de preços em paralelo
+        const [campaignData, dailymotionData, pricingData] = await Promise.all([
           fetchCampaignData(),
+          fetchDailymotionData(),
           fetchPricingTable()
         ]);
 
+        // Combina as fontes de dados de campanha
+        const combinedCampaignData = [...campaignData, ...dailymotionData];
 
         // Remove linhas sem campanha definida
-        const filteredCampaignData = campaignData.filter(item => item.campanha && item.campanha.trim() !== '');
+        const filteredCampaignData = combinedCampaignData.filter(item => item.campanha && item.campanha.trim() !== '');
 
         // Normaliza números de PI removendo zeros à esquerda
         const normalizedData = filteredCampaignData.map(item => {
@@ -116,6 +122,9 @@ export const CampaignProvider = ({ children }: CampaignProviderProps) => {
     }
     if (filters.tipoDeCompra.length > 0) {
       filtered = filtered.filter(d => filters.tipoDeCompra.includes(d.tipoDeCompra));
+    }
+    if (filters.localizacao.length > 0) {
+      filtered = filtered.filter(d => filters.localizacao.includes(d.localizacao));
     }
 
     setFilteredData(filtered);
@@ -184,8 +193,12 @@ export const CampaignProvider = ({ children }: CampaignProviderProps) => {
     tiposDeCompra: Array.from(new Set(data.map(d => d.tipoDeCompra).filter(Boolean))),
     campanhas: Array.from(new Set(data.map(d => d.campanha).filter(Boolean))),
     numerosPi: Array.from(new Set(data.map(d => d.numeroPi).filter(Boolean))),
-    clientes: Array.from(new Set(data.map(d => d.cliente).filter(Boolean)))
+    clientes: Array.from(new Set(data.map(d => d.cliente).filter(Boolean))),
+    localizacoes: Array.from(new Set(data.map(d => d.localizacao).filter(Boolean)))
   };
+
+  // Nome da agência do primeiro registro com agência definida
+  const agencia = data.find(d => d.agencia && d.agencia.trim() !== '')?.agencia ?? '';
 
   return (
     <CampaignContext.Provider
@@ -198,6 +211,7 @@ export const CampaignProvider = ({ children }: CampaignProviderProps) => {
         error,
         campaigns,
         overallMetrics,
+        agencia,
         availableFilters
       }}
     >

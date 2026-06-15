@@ -1,16 +1,27 @@
 import { CampaignSummary, ProcessedCampaignData, Filters, CampaignMetrics } from '../types/campaign';
 import { useMemo, useState } from 'react';
 import { subDays } from 'date-fns';
-import logoSenai from '../images/Logo-SENAI.png';
-import logoSesi from '../images/sesi_logo.jpg';
-import logoSesc from '../images/logo-sesc.png';
+import { getClientLogo } from '../config/clientLogos';
+import { toSlug } from '../utils/slug';
 
-// Mapeamento de logos por cliente
-const clientLogos: Record<string, string> = {
-  'SENAI': logoSenai,
-  'SESI': logoSesi,
-  'SESC': logoSesc
-};
+// Ícone de "olho" que abre o dashboard de um nível (cliente/campanha/PI) em nova aba
+const EyeLink = ({ href, title, size = 'sm' }: { href: string; title: string; size?: 'sm' | 'md' }) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    onClick={e => e.stopPropagation()}
+    title={title}
+    className={`flex items-center justify-center rounded-lg bg-gray-100 hover:bg-blue-600 text-gray-400 hover:text-white transition-colors shrink-0 ${
+      size === 'md' ? 'w-8 h-8' : 'w-6 h-6'
+    }`}
+  >
+    <svg className={size === 'md' ? 'w-4 h-4' : 'w-3.5 h-3.5'} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+    </svg>
+  </a>
+);
 
 interface CampaignListProps {
   campaigns: CampaignSummary[];
@@ -24,6 +35,7 @@ interface CampaignListProps {
   selectedVehicle?: string | null;
   selectedClient?: string | null;
   onSelectClient?: (client: string | null) => void;
+  sevenDaysAgoFromMaxDate?: Date;
 }
 
 interface ClientData {
@@ -55,7 +67,8 @@ const CampaignList = ({
   onSelectPI,
   selectedVehicle,
   selectedClient,
-  onSelectClient
+  onSelectClient,
+  sevenDaysAgoFromMaxDate
 }: CampaignListProps) => {
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
   const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set());
@@ -102,7 +115,8 @@ const CampaignList = ({
 
     // Aplica filtro de período
     if (periodFilter === '7days') {
-      const sevenDaysAgo = subDays(new Date(), 7);
+      // Mesma janela do card principal: 7 dias a partir da data máxima dos dados
+      const sevenDaysAgo = sevenDaysAgoFromMaxDate ?? subDays(new Date(), 7);
       filteredData = filteredData.filter(item => item.date >= sevenDaysAgo);
     }
 
@@ -173,7 +187,7 @@ const CampaignList = ({
 
     // Ordena clientes por investimento
     return clients.sort((a, b) => b.metrics.investimento - a.metrics.investimento);
-  }, [data, filters, periodFilter, selectedVehicle]);
+  }, [data, filters, periodFilter, selectedVehicle, sevenDaysAgoFromMaxDate]);
 
   // Calcula os PIs disponíveis para cada campanha
   const campaignPIs = useMemo(() => {
@@ -191,7 +205,8 @@ const CampaignList = ({
     }
 
     if (periodFilter === '7days') {
-      const sevenDaysAgo = subDays(new Date(), 7);
+      // Mesma janela do card principal: 7 dias a partir da data máxima dos dados
+      const sevenDaysAgo = sevenDaysAgoFromMaxDate ?? subDays(new Date(), 7);
       filteredData = filteredData.filter(item => item.date >= sevenDaysAgo);
     }
 
@@ -214,7 +229,7 @@ const CampaignList = ({
     });
 
     return result;
-  }, [data, filters, periodFilter, selectedVehicle]);
+  }, [data, filters, periodFilter, selectedVehicle, sevenDaysAgoFromMaxDate]);
 
   const handlePIClick = (pi: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -304,48 +319,32 @@ const CampaignList = ({
                     selectedClient === client.nome ? 'bg-blue-50 border-l-4 border-blue-600' : ''
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
+                  {/* Linha 1: identidade + ações */}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       {/* Logo do cliente ou ícone padrão */}
-                      {clientLogos[client.nome] ? (
+                      {getClientLogo(client.nome) ? (
                         <img
-                          src={clientLogos[client.nome]}
+                          src={getClientLogo(client.nome)}
                           alt={client.nome}
-                          className="h-8 w-28 object-contain object-left"
+                          className="h-7 w-auto max-w-[88px] object-contain object-left shrink-0"
                         />
                       ) : (
-                        <div className="h-8 w-8 bg-gray-200 rounded flex items-center justify-center">
+                        <div className="h-8 w-8 bg-gray-200 rounded flex items-center justify-center shrink-0">
                           <span className="text-xs font-bold text-gray-500">
                             {client.nome.substring(0, 2).toUpperCase()}
                           </span>
                         </div>
                       )}
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold text-gray-900">{client.nome}</p>
-                          <div
-                            className={`h-2 w-2 rounded-full ${
-                              client.isActive ? 'bg-green-500' : 'bg-gray-400'
-                            }`}
-                            title={client.isActive ? 'Ativo nos últimos 7 dias' : 'Inativo'}
-                          />
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          {client.campanhas.length} campanha{client.campanhas.length !== 1 ? 's' : ''}
-                        </p>
-                      </div>
+                      <p className="text-sm font-semibold text-gray-900 truncate">{client.nome}</p>
+                      <div
+                        className={`h-2 w-2 rounded-full shrink-0 ${
+                          client.isActive ? 'bg-green-500' : 'bg-gray-400'
+                        }`}
+                        title={client.isActive ? 'Ativo nos últimos 7 dias' : 'Inativo'}
+                      />
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-gray-900">
-                          {formatCurrency(
-                            client.metrics.investimentoReal && client.metrics.investimentoReal > 0
-                              ? client.metrics.investimentoReal
-                              : client.metrics.investimento
-                          )}
-                        </p>
-                        <p className="text-xs text-gray-500">{formatNumber(client.metrics.impressoes)} imp.</p>
-                      </div>
+                    <div className="flex items-center gap-2 shrink-0">
                       <button
                         onClick={(e) => handleClientSelect(client.nome, e)}
                         className={`px-2 py-1 text-xs rounded ${
@@ -356,6 +355,11 @@ const CampaignList = ({
                       >
                         Filtrar
                       </button>
+                      <EyeLink
+                        href={`/${toSlug(client.nome)}`}
+                        title={`Ver dashboard de ${client.nome}`}
+                        size="md"
+                      />
                       <svg
                         className={`w-5 h-5 text-gray-400 transition-transform ${
                           expandedClients.has(client.nome) ? 'rotate-180' : ''
@@ -366,6 +370,28 @@ const CampaignList = ({
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
+                    </div>
+                  </div>
+
+                  {/* Linha 2: degrau de métricas */}
+                  <div className="mt-3 grid grid-cols-3 gap-2 border-t border-gray-100 pt-3">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide text-gray-400">Campanhas</p>
+                      <p className="text-sm font-medium text-gray-700">{client.campanhas.length}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide text-gray-400">Investimento</p>
+                      <p className="text-sm font-semibold text-blue-600 truncate">
+                        {formatCurrency(
+                          client.metrics.investimentoReal && client.metrics.investimentoReal > 0
+                            ? client.metrics.investimentoReal
+                            : client.metrics.investimento
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide text-gray-400">Impressões</p>
+                      <p className="text-sm font-medium text-gray-700">{formatNumber(client.metrics.impressoes)}</p>
                     </div>
                   </div>
                 </div>
@@ -410,6 +436,10 @@ const CampaignList = ({
                                 <span>{formatNumber(campaign.metrics.cliques)} cliques</span>
                               </div>
                             </div>
+                            <EyeLink
+                              href={`/${toSlug(client.nome)}/${toSlug(campaign.nome)}`}
+                              title={`Ver dashboard de ${campaign.nome}`}
+                            />
                             <svg
                               className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${
                                 expandedCampaigns.has(campaign.nome) ? 'rotate-180' : ''
@@ -429,17 +459,27 @@ const CampaignList = ({
                             <p className="text-xs font-medium text-gray-500 mb-2">Números PI:</p>
                             <div className="flex flex-wrap gap-2">
                               {campaignPIs.get(campaign.nome)!.map(pi => (
-                                <button
+                                <div
                                   key={pi}
-                                  onClick={(e) => handlePIClick(pi, e)}
-                                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                                  className={`flex items-center gap-1 pl-3 pr-1 py-1 rounded-lg transition-colors ${
                                     selectedPI === pi
-                                      ? 'bg-blue-600 text-white shadow-sm'
-                                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                      ? 'bg-blue-600 shadow-sm'
+                                      : 'bg-gray-100 hover:bg-gray-200'
                                   }`}
                                 >
-                                  PI {pi}
-                                </button>
+                                  <button
+                                    onClick={(e) => handlePIClick(pi, e)}
+                                    className={`text-xs font-medium ${
+                                      selectedPI === pi ? 'text-white' : 'text-gray-700'
+                                    }`}
+                                  >
+                                    PI {pi}
+                                  </button>
+                                  <EyeLink
+                                    href={`/${toSlug(client.nome)}/${toSlug(campaign.nome)}/${pi}`}
+                                    title={`Ver dashboard do PI ${pi}`}
+                                  />
+                                </div>
                               ))}
                             </div>
                           </div>

@@ -115,7 +115,8 @@ const Filters = ({ isOpen, onClose }: FiltersProps) => {
       veiculo: [],
       tipoDeCompra: [],
       campanha: [],
-      numeroPi: null
+      numeroPi: null,
+      localizacao: []
     };
     setLocalFilters(clearedFilters);
     setFilters(clearedFilters);
@@ -128,7 +129,7 @@ const Filters = ({ isOpen, onClose }: FiltersProps) => {
     ]);
   };
 
-  const toggleArrayFilter = (key: 'veiculo' | 'tipoDeCompra' | 'campanha', value: string) => {
+  const toggleArrayFilter = (key: 'veiculo' | 'tipoDeCompra' | 'campanha' | 'localizacao', value: string) => {
     setLocalFilters(prev => {
       const currentArray = prev[key];
       const newArray = currentArray.includes(value)
@@ -316,6 +317,27 @@ const Filters = ({ isOpen, onClose }: FiltersProps) => {
                 ))}
               </div>
             </div>
+
+            {availableFilters.localizacoes.length > 0 && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Localização
+                </label>
+                <div className="space-y-2">
+                  {availableFilters.localizacoes.map(localizacao => (
+                    <label key={localizacao} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={localFilters.localizacao.includes(localizacao)}
+                        onChange={() => toggleArrayFilter('localizacao', localizacao)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">{localizacao}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="px-6 py-4 border-t border-gray-200 flex gap-3">

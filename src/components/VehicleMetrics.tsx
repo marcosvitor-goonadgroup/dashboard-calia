@@ -1,6 +1,12 @@
 import { useMemo, JSX } from 'react';
 import { ProcessedCampaignData, Filters } from '../types/campaign';
 import BenchmarkIndicator from './BenchmarkIndicator';
+import logoDailymotion from '../images/dailymotion_logo.png';
+
+// Veículos cujo logo é uma imagem (PNG/JPG) em vez de um SVG inline
+const imageLogos: { [key: string]: string } = {
+  Dailymotion: logoDailymotion
+};
 
 interface VehicleMetricsProps {
   data: ProcessedCampaignData[];
@@ -30,6 +36,17 @@ const formatNumber = (num: number): string => {
 
 // Social Media Icons
 const SocialIcon = ({ name }: { name: string }) => {
+  // Veículos com logo em imagem têm prioridade sobre os ícones SVG
+  if (imageLogos[name]) {
+    return (
+      <img
+        src={imageLogos[name]}
+        alt={name}
+        className="w-8 h-8 object-contain"
+      />
+    );
+  }
+
   const icons: { [key: string]: JSX.Element } = {
     Facebook: (
       <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
