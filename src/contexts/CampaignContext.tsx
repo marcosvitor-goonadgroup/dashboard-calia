@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { ProcessedCampaignData, Filters, CampaignSummary, CampaignMetrics } from '../types/campaign';
-import { fetchCampaignData, fetchDailymotionData, fetchPricingTable } from '../services/api';
+import { fetchCampaignData, fetchConsolidatedData, fetchPricingTable } from '../services/api';
 import { calculateRealInvestment } from '../utils/investmentCalculator';
 import { subDays, isAfter } from 'date-fns';
 
@@ -57,15 +57,15 @@ export const CampaignProvider = ({ children }: CampaignProviderProps) => {
       try {
         setLoading(true);
 
-        // Carrega dados de campanha (Meta + Dailymotion) e tabela de preços em paralelo
-        const [campaignData, dailymotionData, pricingData] = await Promise.all([
+        // Carrega dados de campanha (Meta + planilhas Consolidado) e tabela de preços em paralelo
+        const [campaignData, consolidatedData, pricingData] = await Promise.all([
           fetchCampaignData(),
-          fetchDailymotionData(),
+          fetchConsolidatedData(),
           fetchPricingTable()
         ]);
 
         // Combina as fontes de dados de campanha
-        const combinedCampaignData = [...campaignData, ...dailymotionData];
+        const combinedCampaignData = [...campaignData, ...consolidatedData];
 
         // Remove linhas sem campanha definida
         const filteredCampaignData = combinedCampaignData.filter(item => item.campanha && item.campanha.trim() !== '');

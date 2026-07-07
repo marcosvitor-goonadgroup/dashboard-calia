@@ -3,7 +3,9 @@
     "allow": [
       "Bash(ls \"c:\\\\Users\\\\marco\\\\OneDrive\\\\Desktop\\\\GOON\\\\AdDesk\\\\Calia\\\\src\\\\images\"\" && ls \"c:UsersmarcoOneDriveDesktopGOONAdDeskCaliadistassets\"\")",
       "WebFetch(domain:nmbcoamazonia-api.vercel.app)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)"
     ]
   }
 }

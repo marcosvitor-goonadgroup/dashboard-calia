@@ -8,8 +8,11 @@ const CAMPAIGN_API_URLS = [
   `${API_BASE}/google/sheets/11wHR3ygl6w52Lfy6riucnxkH0IWYEy-Pd_6qryqo7OY/data?range=Meta`
 ];
 
-const DAILYMOTION_API_URLS = [
-  `${API_BASE}/google/sheets/108JM2aCuwPURZaN3KQa_jjOBi0eT1twSFbT29kzEb3E/data?range=dailymotion`
+// Planilhas no formato "Consolidado" (mesmo layout de 29 colunas):
+// Dailymotion, Caixa/Cittamobi, etc. São todas mapeadas por mapConsolidatedRow.
+const CONSOLIDATED_API_URLS = [
+  `${API_BASE}/google/sheets/108JM2aCuwPURZaN3KQa_jjOBi0eT1twSFbT29kzEb3E/data?range=dailymotion`,
+  `${API_BASE}/google/sheets/1wB305ZP8J7EWaCz2BL3QHi0B-NDDILgip0r8pwpcFO4/data?range=Consolidado`
 ];
 
 const SEARCH_API_URLS = [
@@ -145,10 +148,54 @@ export const fetchCampaignData = async (): Promise<ProcessedCampaignData[]> => {
   }
 };
 
-export const fetchDailymotionData = async (): Promise<ProcessedCampaignData[]> => {
+// Mapeia uma linha do formato "Consolidado" (29 colunas) para ProcessedCampaignData.
+// Layout:
+// [0] NomeConta, [1] IDConta, [2] Data, [3] Device, [4] CampaignName,
+// [5] CampaignID, [6] AdGroupName, [7] AdgroupID, [8] AdName, [9] AdID,
+// [10] AdFinalURL, [11] Cost(Spend), [12] Impressions, [13] Clicks,
+// [14] VideoViews, [15] Views25%, [16] Views50%, [17] Views75%,
+// [18] Views100%, [19] VA, [20] Agência, [21] Veículo, [22] Número PI,
+// [23] Tipo de Compra, [24] Investimento, [25] Formato, [26] Campanha,
+// [27] Localização, [28] Cliente
+// Obs.: a coluna Cost(Spend) vem vazia; o gasto está em "Investimento".
+const mapConsolidatedRow = (row: string[]): ProcessedCampaignData => {
+  const tipoDeCompra = row[23] || '';
+  const completeViews = parseNumber(row[18]); // Views100%
+  // CPCV (custo por complete view): a unidade de entrega/cobrança é a
+  // visualização completa (Views100%), então "views" usa essa coluna.
+  // Nos demais tipos, "views" segue a coluna Video View.
+  const isCPCV = tipoDeCompra.toUpperCase().includes('CPCV');
+  return {
+    date: parseDate(row[2]),
+    campaignName: row[4] || '',
+    adSetName: row[6] || '',
+    adName: row[8] || '',
+    cost: parseCurrency(row[24]),
+    impressions: parseNumber(row[12]),
+    reach: 0,
+    clicks: parseNumber(row[13]),
+    videoViews: isCPCV ? completeViews : parseNumber(row[14]),
+    videoViews25: parseNumber(row[15]),
+    videoViews50: parseNumber(row[16]),
+    videoViews75: parseNumber(row[17]),
+    videoCompletions: completeViews,
+    totalEngagements: 0,
+    veiculo: normalizeVeiculo(row[21] || ''),
+    tipoDeCompra,
+    videoEstaticoAudio: '',
+    image: row[10] || '',
+    campanha: row[26] || '',
+    numeroPi: row[22] || '',
+    localizacao: row[27] || '',
+    cliente: row[28] || '',
+    agencia: row[20] || ''
+  };
+};
+
+export const fetchConsolidatedData = async (): Promise<ProcessedCampaignData[]> => {
   try {
     const responses = await Promise.all(
-      DAILYMOTION_API_URLS.map(url => axios.get<ApiResponse>(url))
+      CONSOLIDATED_API_URLS.map(url => axios.get<ApiResponse>(url))
     );
 
     const allData: ProcessedCampaignData[] = [];
@@ -156,47 +203,9 @@ export const fetchDailymotionData = async (): Promise<ProcessedCampaignData[]> =
     responses.forEach(response => {
       if (response.data.success && response.data.data.values.length > 1) {
         const rows = response.data.data.values.slice(1);
-
         rows.forEach(row => {
           if (row.length >= 29) {
-            // Formato Dailymotion:
-            // [0] NomeConta, [1] IDConta, [2] Data, [3] Device, [4] CampaignName,
-            // [5] CampaignID, [6] AdGroupName, [7] AdgroupID, [8] AdName, [9] AdID,
-            // [10] AdFinalURL, [11] Cost(Spend), [12] Impressions, [13] Clicks,
-            // [14] VideoViews, [15] Views25%, [16] Views50%, [17] Views75%,
-            // [18] Views100%, [19] VA, [20] Agência, [21] Veículo, [22] Número PI,
-            // [23] Tipo de Compra, [24] Investimento, [25] Formato, [26] Campanha,
-            // [27] Localização, [28] Cliente
-            // Obs.: a coluna Cost(Spend) vem vazia; o gasto está em "Investimento".
-            // Compra é CPCV (custo por complete view): a unidade de entrega/cobrança
-            // é a visualização completa (Views100%), então "views" usa essa coluna.
-            const completeViews = parseNumber(row[18]); // Views100%
-            const dataRow: ProcessedCampaignData = {
-              date: parseDate(row[2]),
-              campaignName: row[4] || '',
-              adSetName: row[6] || '',
-              adName: row[8] || '',
-              cost: parseCurrency(row[24]),
-              impressions: parseNumber(row[12]),
-              reach: 0,
-              clicks: parseNumber(row[13]),
-              videoViews: completeViews,
-              videoViews25: parseNumber(row[15]),
-              videoViews50: parseNumber(row[16]),
-              videoViews75: parseNumber(row[17]),
-              videoCompletions: completeViews,
-              totalEngagements: 0,
-              veiculo: normalizeVeiculo(row[21] || 'Dailymotion'),
-              tipoDeCompra: row[23] || '',
-              videoEstaticoAudio: '',
-              image: row[10] || '',
-              campanha: row[26] || '',
-              numeroPi: row[22] || '',
-              localizacao: row[27] || '',
-              cliente: row[28] || '',
-              agencia: row[20] || ''
-            };
-            allData.push(dataRow);
+            allData.push(mapConsolidatedRow(row));
           }
         });
       }
@@ -204,7 +213,7 @@ export const fetchDailymotionData = async (): Promise<ProcessedCampaignData[]> =
 
     return allData;
   } catch (error) {
-    console.error('Erro ao buscar dados do Dailymotion:', error);
+    console.error('Erro ao buscar dados consolidados:', error);
     throw error;
   }
 };
