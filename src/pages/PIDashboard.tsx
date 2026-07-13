@@ -118,37 +118,17 @@ const PIDashboardContent = ({ clientSlug, campaignSlug, piSlug }: PIDashboardPro
     return d;
   }, [piData, periodFilter, sevenDaysAgoFromMaxDate, selectedVehicle]);
 
-  const previousPeriodMetrics = useMemo(() => {
-    if (periodFilter !== '7days') return null;
-    const fourteenDaysAgo = startOfDay(subDays(maxAvailableDate, 14));
-    const prev = piData.filter(i => i.date >= fourteenDaysAgo && i.date < sevenDaysAgoFromMaxDate);
-    const totalInv = prev.reduce((s, i) => s + i.cost, 0);
-    const totalImp = prev.reduce((s, i) => s + i.impressions, 0);
-    const totalClk = prev.reduce((s, i) => s + i.clicks, 0);
-    const totalVid = prev.reduce((s, i) => s + i.videoViews, 0);
-    const totalEng = prev.reduce((s, i) => s + i.totalEngagements, 0);
-    const totalVidC = prev.reduce((s, i) => s + i.videoCompletions, 0);
-    return {
-      investimento: totalInv, investimentoReal: 0,
-      impressoes: totalImp, cliques: totalClk, views: totalVid, engajamento: totalEng,
-      cpm: totalImp > 0 ? (totalInv / totalImp) * 1000 : 0,
-      cpc: totalClk > 0 ? totalInv / totalClk : 0,
-      cpv: totalVid > 0 ? totalInv / totalVid : 0,
-      cpe: totalEng > 0 ? totalInv / totalEng : 0,
-      ctr: totalImp > 0 ? (totalClk / totalImp) * 100 : 0,
-      vtr: totalImp > 0 ? (totalVidC / totalImp) * 100 : 0,
-      taxaEngajamento: totalImp > 0 ? (totalEng / totalImp) * 100 : 0
-    };
-  }, [piData, periodFilter, maxAvailableDate, sevenDaysAgoFromMaxDate]);
-
+  // Big numbers refletem o PI INTEIRO (ignoram o toggle de período), para bater
+  // sempre com o "Realizado" do modal — que vem direto da plataforma.
+  // O investimento usa o mesmo critério do modal: realInvestment || cost.
   const displayMetrics = useMemo(() => {
-    const totalInv = displayData.reduce((s, i) => s + i.cost, 0);
-    const totalInvR = displayData.reduce((s, i) => s + (i.realInvestment || 0), 0);
-    const totalImp = displayData.reduce((s, i) => s + i.impressions, 0);
-    const totalClk = displayData.reduce((s, i) => s + i.clicks, 0);
-    const totalVid = displayData.reduce((s, i) => s + i.videoViews, 0);
-    const totalEng = displayData.reduce((s, i) => s + i.totalEngagements, 0);
-    const totalVidC = displayData.reduce((s, i) => s + i.videoCompletions, 0);
+    const totalInv = piData.reduce((s, i) => s + i.cost, 0);
+    const totalInvR = piData.reduce((s, i) => s + (i.realInvestment || i.cost), 0);
+    const totalImp = piData.reduce((s, i) => s + i.impressions, 0);
+    const totalClk = piData.reduce((s, i) => s + i.clicks, 0);
+    const totalVid = piData.reduce((s, i) => s + i.videoViews, 0);
+    const totalEng = piData.reduce((s, i) => s + i.totalEngagements, 0);
+    const totalVidC = piData.reduce((s, i) => s + i.videoCompletions, 0);
     return {
       investimento: totalInv, investimentoReal: totalInvR,
       impressoes: totalImp, cliques: totalClk, views: totalVid, engajamento: totalEng,
@@ -160,7 +140,7 @@ const PIDashboardContent = ({ clientSlug, campaignSlug, piSlug }: PIDashboardPro
       vtr: totalImp > 0 ? (totalVidC / totalImp) * 100 : 0,
       taxaEngajamento: totalImp > 0 ? (totalEng / totalImp) * 100 : 0
     };
-  }, [displayData]);
+  }, [piData]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -274,7 +254,9 @@ const PIDashboardContent = ({ clientSlug, campaignSlug, piSlug }: PIDashboardPro
                 periodFilter={periodFilter}
                 generalBenchmarks={generalBenchmarks}
                 comparisonMode={comparisonMode}
-                previousPeriodMetrics={previousPeriodMetrics}
+                // Big numbers refletem o PI inteiro; comparação com "período anterior"
+                // não se aplica aqui (evita delta enganoso). Benchmark de taxas segue ativo.
+                previousPeriodMetrics={null}
                 selectedPI={piSlug}
               />
             </div>
