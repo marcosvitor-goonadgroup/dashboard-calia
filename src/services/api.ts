@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { ApiResponse, ProcessedCampaignData, ProcessedSearchData, PricingTableRow } from '../types/campaign';
 import { parse } from 'date-fns';
+import { toSlug } from '../utils/slug';
 
 const API_BASE = 'https://nmbcoamazonia-api.vercel.app';
 
@@ -8,11 +9,14 @@ const CAMPAIGN_API_URLS = [
   `${API_BASE}/google/sheets/11wHR3ygl6w52Lfy6riucnxkH0IWYEy-Pd_6qryqo7OY/data?range=Meta`
 ];
 
-// Planilhas no formato "Consolidado" (mesmo layout de 29 colunas):
-// Dailymotion, Caixa/Cittamobi, etc. São todas mapeadas por mapConsolidatedRow.
+// Planilhas no formato "Consolidado": Dailymotion, Caixa/Cittamobi,
+// Ministério da Saúde/Moovit, etc. São todas mapeadas por mapConsolidatedRow.
+// As colunas variam entre planilhas (ex.: a do Ministério não tem "Video View"
+// nem "Localização"), por isso o mapeamento é feito pelo cabeçalho.
 const CONSOLIDATED_API_URLS = [
   `${API_BASE}/google/sheets/108JM2aCuwPURZaN3KQa_jjOBi0eT1twSFbT29kzEb3E/data?range=dailymotion`,
-  `${API_BASE}/google/sheets/1wB305ZP8J7EWaCz2BL3QHi0B-NDDILgip0r8pwpcFO4/data?range=Consolidado`
+  `${API_BASE}/google/sheets/1wB305ZP8J7EWaCz2BL3QHi0B-NDDILgip0r8pwpcFO4/data?range=Consolidado`,
+  `${API_BASE}/google/sheets/1vvIEydJYR3eqY_BC5H47RLgjzP7ks45ad5G-NQmMOBY/data?range=Consolidado`
 ];
 
 const SEARCH_API_URLS = [
@@ -148,47 +152,73 @@ export const fetchCampaignData = async (): Promise<ProcessedCampaignData[]> => {
   }
 };
 
-// Mapeia uma linha do formato "Consolidado" (29 colunas) para ProcessedCampaignData.
-// Layout:
-// [0] NomeConta, [1] IDConta, [2] Data, [3] Device, [4] CampaignName,
-// [5] CampaignID, [6] AdGroupName, [7] AdgroupID, [8] AdName, [9] AdID,
-// [10] AdFinalURL, [11] Cost(Spend), [12] Impressions, [13] Clicks,
-// [14] VideoViews, [15] Views25%, [16] Views50%, [17] Views75%,
-// [18] Views100%, [19] VA, [20] Agência, [21] Veículo, [22] Número PI,
-// [23] Tipo de Compra, [24] Investimento, [25] Formato, [26] Campanha,
-// [27] Localização, [28] Cliente
+// Normaliza o nome de uma coluna para casar grafias diferentes entre
+// planilhas: "Campaign Name" / "CampaignName", "Views 25%" / "Views25%".
+const normalizeHeader = (header: string): string => toSlug(header).replace(/-/g, '');
+
+// Quando a coluna "Campanha" vem vazia (ex.: Ministério da Saúde), deriva o
+// nome a partir da taxonomia do Campaign Name:
+//   mes_agencia_cliente_[veiculo-]campanha-N_..._veiculo_PI
+// Ex.: "fev_calia_ministerio-da-saude_moovit-campanha-de-carnaval-1_..." -> "Campanha de carnaval"
+const deriveCampanha = (campaignName: string, veiculo: string): string => {
+  let segment = campaignName.split('_')[3] || '';
+  const vehiclePrefix = `${toSlug(veiculo)}-`;
+  if (segment.startsWith(vehiclePrefix)) segment = segment.slice(vehiclePrefix.length);
+  const name = segment
+    .replace(/-\d(?=-|$)/g, '') // remove o número da linha ("-1", "-2")
+    .replace(/-/g, ' ')
+    .trim();
+  return name.charAt(0).toUpperCase() + name.slice(1);
+};
+
+// Mapeia uma linha do formato "Consolidado" para ProcessedCampaignData,
+// localizando cada campo pelo nome (normalizado) da coluna no cabeçalho.
+// Colunas usadas: Data, Campaign Name, Ad Group Name, Ad Name, Ad Final URL,
+// Impressions, Clicks, Video View(s), Views 25/50/75/100%, Agência, Veículo,
+// Número PI, Tipo de Compra, Investimento, Campanha, Localização, Cliente.
 // Obs.: a coluna Cost(Spend) vem vazia; o gasto está em "Investimento".
-const mapConsolidatedRow = (row: string[]): ProcessedCampaignData => {
-  const tipoDeCompra = row[23] || '';
-  const completeViews = parseNumber(row[18]); // Views100%
+const mapConsolidatedRow = (row: string[], columns: Map<string, number>): ProcessedCampaignData => {
+  // Aceita aliases para colunas grafadas de forma diferente entre planilhas
+  const col = (...names: string[]): string => {
+    for (const name of names) {
+      const i = columns.get(name);
+      if (i !== undefined && row[i]) return row[i];
+    }
+    return '';
+  };
+
+  const tipoDeCompra = col('tipodecompra');
+  const completeViews = parseNumber(col('views100'));
   // CPCV (custo por complete view): a unidade de entrega/cobrança é a
   // visualização completa (Views100%), então "views" usa essa coluna.
   // Nos demais tipos, "views" segue a coluna Video View.
   const isCPCV = tipoDeCompra.toUpperCase().includes('CPCV');
+  const campaignName = col('campaignname');
+  const veiculo = normalizeVeiculo(col('veiculo'));
   return {
-    date: parseDate(row[2]),
-    campaignName: row[4] || '',
-    adSetName: row[6] || '',
-    adName: row[8] || '',
-    cost: parseCurrency(row[24]),
-    impressions: parseNumber(row[12]),
+    date: parseDate(col('data')),
+    campaignName,
+    adSetName: col('adgroupname'),
+    adName: col('adname'),
+    cost: parseCurrency(col('investimento')),
+    impressions: parseNumber(col('impressions')),
     reach: 0,
-    clicks: parseNumber(row[13]),
-    videoViews: isCPCV ? completeViews : parseNumber(row[14]),
-    videoViews25: parseNumber(row[15]),
-    videoViews50: parseNumber(row[16]),
-    videoViews75: parseNumber(row[17]),
+    clicks: parseNumber(col('clicks')),
+    videoViews: isCPCV ? completeViews : parseNumber(col('videoviews', 'videoview')),
+    videoViews25: parseNumber(col('views25')),
+    videoViews50: parseNumber(col('views50')),
+    videoViews75: parseNumber(col('views75')),
     videoCompletions: completeViews,
     totalEngagements: 0,
-    veiculo: normalizeVeiculo(row[21] || ''),
+    veiculo,
     tipoDeCompra,
     videoEstaticoAudio: '',
-    image: row[10] || '',
-    campanha: row[26] || '',
-    numeroPi: row[22] || '',
-    localizacao: row[27] || '',
-    cliente: row[28] || '',
-    agencia: row[20] || ''
+    image: col('adfinalurl'),
+    campanha: col('campanha') || deriveCampanha(campaignName, veiculo),
+    numeroPi: col('numeropi'),
+    localizacao: col('localizacao'),
+    cliente: col('cliente'),
+    agencia: col('agencia')
   };
 };
 
@@ -202,10 +232,13 @@ export const fetchConsolidatedData = async (): Promise<ProcessedCampaignData[]> 
 
     responses.forEach(response => {
       if (response.data.success && response.data.data.values.length > 1) {
-        const rows = response.data.data.values.slice(1);
+        const [header, ...rows] = response.data.data.values;
+        const columns = new Map(header.map((name, i) => [normalizeHeader(name), i] as [string, number]));
         rows.forEach(row => {
-          if (row.length >= 29) {
-            allData.push(mapConsolidatedRow(row));
+          // A API omite células vazias no fim da linha: linhas mais curtas
+          // que o cabeçalho estão incompletas (sem Cliente) e são ignoradas.
+          if (row.length >= header.length) {
+            allData.push(mapConsolidatedRow(row, columns));
           }
         });
       }

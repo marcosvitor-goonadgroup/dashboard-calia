@@ -5,7 +5,18 @@
       "WebFetch(domain:nmbcoamazonia-api.vercel.app)",
       "Bash(npx tsc:*)",
       "Bash(npx tsc *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(curl -s \"https://nmbcoamazonia-api.vercel.app/google/sheets/1vvIEydJYR3eqY_BC5H47RLgjzP7ks45ad5G-NQmMOBY/data?range=Consolidado\" -o ms.json)",
+      "Bash(curl -s \"https://nmbcoamazonia-api.vercel.app/google/sheets/1wB305ZP8J7EWaCz2BL3QHi0B-NDDILgip0r8pwpcFO4/data?range=Consolidado\" -o caixa.json)",
+      "Bash(curl -s \"https://nmbcoamazonia-api.vercel.app/google/sheets/108JM2aCuwPURZaN3KQa_jjOBi0eT1twSFbT29kzEb3E/data?range=dailymotion\" -o dm.json)",
+      "Bash(node analyze.cjs dm.json)",
+      "Bash(node -e ' *)",
+      "Bash(python -c ' *)",
+      "Bash(curl -s \"https://nmbcoamazonia-api.vercel.app/google/sheets/1zgRBEs_qi_9DdYLqw-cEedD1u66FS88ku6zTZ0gV-oU/data?range=base\")",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{const v=JSON.parse\\(s\\).data.values;console.log\\(JSON.stringify\\(v[0]\\)\\);v.filter\\(r=>/moovit|cittamobi/i.test\\(r[0]\\)\\).forEach\\(r=>console.log\\(JSON.stringify\\(r\\)\\)\\)}\\)\")",
+      "Bash(node -e \"const v=require\\('./dm.json'\\).data.values; console.log\\(JSON.stringify\\(v.find\\(r=>r.length===9\\)\\)\\)\")",
+      "Bash(echo \"tsc exit: $?\")",
+      "Bash(grep -v \"^$\")"
     ]
   }
 }

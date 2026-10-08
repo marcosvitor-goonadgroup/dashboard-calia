@@ -2,10 +2,14 @@ import { useMemo, JSX } from 'react';
 import { ProcessedCampaignData, Filters } from '../types/campaign';
 import BenchmarkIndicator from './BenchmarkIndicator';
 import logoDailymotion from '../images/dailymotion_logo.png';
+import logoMoovit from '../images/moovit_icon.png';
+import logoCittamobi from '../images/cittamobi_icon.png';
 
 // Veículos cujo logo é uma imagem (PNG/JPG) em vez de um SVG inline
 const imageLogos: { [key: string]: string } = {
-  Dailymotion: logoDailymotion
+  Dailymotion: logoDailymotion,
+  Moovit: logoMoovit,
+  Cittamobi: logoCittamobi
 };
 
 interface VehicleMetricsProps {
