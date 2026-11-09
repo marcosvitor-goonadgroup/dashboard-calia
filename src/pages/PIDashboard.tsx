@@ -202,7 +202,12 @@ const PIDashboardContent = ({ clientSlug, campaignSlug, piSlug }: PIDashboardPro
           onClearFilters={handleClearFilters}
           activeFiltersCount={activeFiltersCount}
         />
-        <Filters isOpen={isFiltersOpen} onClose={() => setIsFiltersOpen(false)} />
+        <Filters
+          isOpen={isFiltersOpen}
+          onClose={() => setIsFiltersOpen(false)}
+          exportData={displayData}
+          exportFileName={`dados_${clientSlug}_${campaignSlug}_pi-${piSlug}`}
+        />
 
         <main>
           <div className="space-y-6">

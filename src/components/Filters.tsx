@@ -1,21 +1,28 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useCampaign } from '../contexts/CampaignContext';
-import { startOfYear, endOfYear, subMonths } from 'date-fns';
+import { startOfYear, endOfYear, subMonths, format } from 'date-fns';
 import { DateRangePicker, RangeKeyDict, Range } from 'react-date-range';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import './DateRangePicker.css';
 import { ptBR } from 'date-fns/locale';
+import { ProcessedCampaignData } from '../types/campaign';
+import { buildExportFileName, exportToCsv, exportToExcel } from '../utils/exportData';
 
 interface FiltersProps {
   isOpen: boolean;
   onClose: () => void;
+  // Linhas exibidas na página (já com filtros, período e seleções aplicados)
+  exportData?: ProcessedCampaignData[];
+  // Prefixo do nome do arquivo exportado (ex.: "dados_sesc_campanha-verao")
+  exportFileName?: string;
 }
 
-const Filters = ({ isOpen, onClose }: FiltersProps) => {
+const Filters = ({ isOpen, onClose, exportData, exportFileName = 'dados' }: FiltersProps) => {
   const { filters, setFilters, availableFilters, data } = useCampaign();
 
   const [localFilters, setLocalFilters] = useState(filters);
+  const [exporting, setExporting] = useState<'csv' | 'excel' | null>(null);
   const [dateRange, setDateRange] = useState<Range[]>([
     {
       startDate: filters.dateRange.start || undefined,
@@ -127,6 +134,37 @@ const Filters = ({ isOpen, onClose }: FiltersProps) => {
         key: 'selection'
       }
     ]);
+  };
+
+  // Período coberto pelos dados exportados (reflete o toggle 7 dias / Todo o período)
+  const exportRange = useMemo(() => {
+    if (!exportData || exportData.length === 0) return null;
+    const times = exportData.map(d => d.date.getTime());
+    return {
+      start: format(new Date(Math.min(...times)), 'dd/MM/yyyy'),
+      end: format(new Date(Math.max(...times)), 'dd/MM/yyyy')
+    };
+  }, [exportData]);
+
+  // Alterações feitas no painel ainda não aplicadas não entram no arquivo
+  const hasPendingFilters = JSON.stringify(localFilters) !== JSON.stringify(filters);
+
+  const handleExport = async (type: 'csv' | 'excel') => {
+    if (!exportData || exportData.length === 0) return;
+    const fileName = buildExportFileName(exportFileName, exportData);
+    setExporting(type);
+    try {
+      if (type === 'csv') {
+        exportToCsv(exportData, fileName);
+      } else {
+        await exportToExcel(exportData, fileName);
+      }
+    } catch (err) {
+      console.error('Erro ao exportar dados:', err);
+      alert('Erro ao gerar o arquivo. Tente novamente.');
+    } finally {
+      setExporting(null);
+    }
   };
 
   const toggleArrayFilter = (key: 'veiculo' | 'tipoDeCompra' | 'campanha' | 'localizacao', value: string) => {
@@ -339,6 +377,38 @@ const Filters = ({ isOpen, onClose }: FiltersProps) => {
               </div>
             )}
           </div>
+
+          {exportData && (
+            <div className="px-6 py-4 border-t border-gray-200">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-semibold text-gray-700">Baixar dados</p>
+                <span className="text-xs text-gray-400">
+                  {new Intl.NumberFormat('pt-BR').format(exportData.length)} linhas
+                  {exportRange && ` · ${exportRange.start} a ${exportRange.end}`}
+                </span>
+              </div>
+              <div className="flex gap-3">
+                {(['csv', 'excel'] as const).map(type => (
+                  <button
+                    key={type}
+                    onClick={() => handleExport(type)}
+                    disabled={exportData.length === 0 || exporting !== null}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    {exporting === type ? 'Gerando...' : type === 'csv' ? 'CSV' : 'Excel'}
+                  </button>
+                ))}
+              </div>
+              <p className={`text-xs mt-2 ${hasPendingFilters ? 'text-amber-600' : 'text-gray-400'}`}>
+                {hasPendingFilters
+                  ? 'Há filtros não aplicados: clique em Aplicar para incluí-los no arquivo.'
+                  : 'Dados diários da página atual, com os filtros e o período aplicados.'}
+              </p>
+            </div>
+          )}
 
           <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
             <button

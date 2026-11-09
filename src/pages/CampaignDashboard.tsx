@@ -224,7 +224,12 @@ const CampaignDashboardContent = ({ clientSlug, campaignSlug }: CampaignDashboar
           onClearFilters={handleClearFilters}
           activeFiltersCount={activeFiltersCount}
         />
-        <Filters isOpen={isFiltersOpen} onClose={() => setIsFiltersOpen(false)} />
+        <Filters
+          isOpen={isFiltersOpen}
+          onClose={() => setIsFiltersOpen(false)}
+          exportData={displayData}
+          exportFileName={`dados_${clientSlug}_${campaignSlug}`}
+        />
 
         <main>
           <div className="space-y-6">

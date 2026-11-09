@@ -17,9 +17,10 @@ import CreativeAnalysis from './components/CreativeAnalysis';
 import ParticlesBackground from './components/ParticlesBackground';
 import PIInfoCard from './components/PIInfoCard';
 import { subDays } from 'date-fns';
+import { toSlug } from './utils/slug';
 
 const DashboardContent = () => {
-  const { loading, error, campaigns, filteredData, filters, setFilters, data } = useCampaign();
+  const { loading, error, campaigns, filteredData, filters, setFilters, data, agencia } = useCampaign();
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null);
   const [periodFilter, setPeriodFilter] = useState<'7days' | 'all'>('7days');
@@ -278,7 +279,12 @@ const DashboardContent = () => {
           onClearFilters={handleClearFilters}
           activeFiltersCount={activeFiltersCount}
         />
-        <Filters isOpen={isFiltersOpen} onClose={() => setIsFiltersOpen(false)} />
+        <Filters
+          isOpen={isFiltersOpen}
+          onClose={() => setIsFiltersOpen(false)}
+          exportData={displayData}
+          exportFileName={`dados_${toSlug(agencia) || 'agencia'}`}
+        />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
