@@ -1,4 +1,4 @@
-import logoCalia from '../images/calia-logo-black.svg';
+import logoAlia from '../images/logo-alia-fsb-dark.svg';
 
 interface HeaderProps {
   onOpenFilters: () => void;
@@ -14,9 +14,9 @@ const Header = ({ onOpenFilters, onClearFilters, activeFiltersCount }: HeaderPro
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 sm:space-x-4">
               <img
-                src={logoCalia}
-                alt="Calia"
-                className="h-8 sm:h-12 w-auto"
+                src={logoAlia}
+                alt="Alia"
+                className="h-10 sm:h-14 w-auto"
               />
               <div className="border-l border-gray-300 pl-2 sm:pl-4">
                 <h1 className="text-base sm:text-2xl font-bold text-gray-900">

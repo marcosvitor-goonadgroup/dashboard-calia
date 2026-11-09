@@ -1,4 +1,4 @@
-import logoCalia from '../images/calia-logo-black.svg';
+import logoAlia from '../images/logo-alia-fsb-dark.svg';
 
 interface Crumb {
   label: string;
@@ -29,7 +29,7 @@ const PageHeader = ({
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <a href="/" title="Visão da agência" className="shrink-0">
-            <img src={logoCalia} alt="Calia" className="h-8 sm:h-10 w-auto" />
+            <img src={logoAlia} alt="Alia" className="h-10 sm:h-12 w-auto" />
           </a>
 
           <div className="border-l border-gray-300 pl-3 sm:pl-4 min-w-0 flex items-center gap-3">
